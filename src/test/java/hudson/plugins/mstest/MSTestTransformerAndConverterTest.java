@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.util.logging.Level;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.junit.After;
@@ -66,8 +67,8 @@ public class MSTestTransformerAndConverterTest extends TestHelper {
         InputStream testStream = this.getClass()
             .getResourceAsStream("JENKINS-23531-xmlentities-forged.trx");
         Files.copy(testStream, testFile.toPath());
-        MSTestReportConverter converter = new MSTestReportConverter(buildListener);
-        transformer = new MSTestTransformer(resolve(testPath), converter, buildListener, false);
+        MSTestReportConverter converter = new MSTestReportConverter(buildListener, Level.INFO);
+        transformer = new MSTestTransformer(resolve(testPath, Level.INFO), converter, buildListener, false, Level.INFO);
         transformer.invoke(parentFile, virtualChannel);
         FilePath[] list = workspace.list("*.trx");
         Assert.assertEquals(1, list.length);
@@ -89,8 +90,8 @@ public class MSTestTransformerAndConverterTest extends TestHelper {
         InputStream testStream = this.getClass()
             .getResourceAsStream("SYSTEM_AD-JENKINS 2015-07-08 10_53_01.trx");
         Files.copy(testStream, testFile.toPath());
-        MSTestReportConverter converter = new MSTestReportConverter(buildListener);
-        transformer = new MSTestTransformer(resolve(testPath), converter, buildListener, false);
+        MSTestReportConverter converter = new MSTestReportConverter(buildListener, Level.INFO);
+        transformer = new MSTestTransformer(resolve(testPath, Level.INFO), converter, buildListener, false, Level.INFO);
         transformer.invoke(parentFile, virtualChannel);
         FilePath[] list = workspace.list("*.trx");
         Assert.assertEquals(1, list.length);
@@ -111,8 +112,8 @@ public class MSTestTransformerAndConverterTest extends TestHelper {
         assert !testFile.exists() || testFile.delete();
         InputStream testStream = this.getClass().getResourceAsStream("JENKINS-23531-charset.trx");
         Files.copy(testStream, testFile.toPath());
-        MSTestReportConverter converter = new MSTestReportConverter(buildListener);
-        transformer = new MSTestTransformer(resolve(testPath), converter, buildListener, false);
+        MSTestReportConverter converter = new MSTestReportConverter(buildListener, Level.INFO);
+        transformer = new MSTestTransformer(resolve(testPath, Level.INFO), converter, buildListener, false, Level.INFO);
         transformer.invoke(parentFile, virtualChannel);
         FilePath[] list = workspace.list("*.trx");
         Assert.assertEquals(1, list.length);

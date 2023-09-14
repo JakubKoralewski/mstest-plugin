@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.logging.Level;
 import jenkins.MasterToSlaveFileCallable;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.tools.ant.DirectoryScanner;
@@ -55,10 +56,10 @@ public class MSTestPublisher extends Recorder implements Serializable, SimpleBui
     }
 
     static String[] resolveTestReports(String testReportsPattern, @NonNull Run<?, ?> build,
-        @NonNull FilePath workspace, @NonNull TaskListener listener) {
+        @NonNull FilePath workspace, @NonNull TaskListener listener, Level logLevel) {
         FileResolver resolver = new FileResolver(listener);
-        String resolved = resolver.SafeResolveFilePath(testReportsPattern, build, listener);
-        return resolver.FindMatchingMSTestReports(resolved, workspace);
+        String resolved = resolver.SafeResolveFilePath(testReportsPattern, build, listener, logLevel);
+        return resolver.FindMatchingMSTestReports(resolved, workspace, logLevel);
     }
 
     @NonNull
@@ -137,20 +138,19 @@ public class MSTestPublisher extends Recorder implements Serializable, SimpleBui
         @NonNull Launcher launcher, final @NonNull TaskListener listener)
         throws InterruptedException, IOException {
 
-        System.setProperty(MsTestLogger.HUDSON_PLUGINS_MSTEST_LEVEL, this.logLevel);
-
         buildTime = build.getTimestamp().getTimeInMillis();
+        Level parsedLogLevel = MsTestLogger.parseLevel(this.logLevel != null ? this.logLevel : DescriptorImpl.defaultLogLevel);
 
-        String[] matchingFiles = resolveTestReports(testResultsFile, build, workspace, listener);
-        MSTestReportConverter converter = new MSTestReportConverter(listener);
+        String[] matchingFiles = resolveTestReports(testResultsFile, build, workspace, listener, parsedLogLevel);
+        MSTestReportConverter converter = new MSTestReportConverter(listener, parsedLogLevel);
         MSTestTransformer transformer = new MSTestTransformer(matchingFiles, converter, listener,
-            failOnError);
+            failOnError, parsedLogLevel);
         boolean result = workspace.act(transformer);
 
         if (result) {
             // Run the JUnit test archiver
             recordTestResult(MSTestTransformer.JUNIT_REPORTS_PATH + "/TEST-*.xml", build, workspace,
-                listener);
+                listener, parsedLogLevel);
             workspace.child(MSTestTransformer.JUNIT_REPORTS_PATH).deleteRecursive();
         } else {
             throw new AbortException("Unable to transform the MSTest report.");
@@ -167,12 +167,12 @@ public class MSTestPublisher extends Recorder implements Serializable, SimpleBui
      * @throws IOException workspace/jenkins operations may throw
      */
     private void recordTestResult(String junitFilePattern, Run<?, ?> build, FilePath workspace,
-        TaskListener listener)
+        TaskListener listener, Level logLevel)
         throws InterruptedException, IOException {
         TestResultAction existingAction = build.getAction(TestResultAction.class);
         TestResultAction action;
 
-        MsTestLogger logger = new MsTestLogger(listener);
+        MsTestLogger logger = new MsTestLogger(listener, logLevel);
         TestResult existingTestResults = null;
 
         if (existingAction != null) {

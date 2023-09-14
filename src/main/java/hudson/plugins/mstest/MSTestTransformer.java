@@ -8,6 +8,7 @@ import hudson.remoting.Channel;
 import hudson.remoting.VirtualChannel;
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import jenkins.MasterToSlaveFileCallable;
@@ -20,21 +21,21 @@ import org.xml.sax.SAXException;
  * @author Antonio Marques
  */
 public class MSTestTransformer extends MasterToSlaveFileCallable<Boolean> {
-
     static final String JUNIT_REPORTS_PATH = "temporary-junit-reports";
     private static final long serialVersionUID = 1L;
     private final TaskListener listener;
     private final boolean failOnError;
-
     private final MSTestReportConverter unitReportTransformer;
     private final String[] msTestFiles;
+    private final Level logLevel;
 
     MSTestTransformer(String[] msTestFiles, @NonNull MSTestReportConverter unitReportTransformer,
-        @NonNull TaskListener listener, boolean failOnError) {
+        @NonNull TaskListener listener, boolean failOnError, Level logLevel) {
         this.msTestFiles = msTestFiles;
         this.unitReportTransformer = unitReportTransformer;
         this.listener = listener;
         this.failOnError = failOnError;
+        this.logLevel = logLevel;
     }
 
     /**
@@ -48,7 +49,7 @@ public class MSTestTransformer extends MasterToSlaveFileCallable<Boolean> {
      * with the node from where the code was sent.
      */
     public Boolean invoke(File ws, VirtualChannel channel) throws IOException {
-        MsTestLogger logger = new MsTestLogger(listener);
+        MsTestLogger logger = new MsTestLogger(listener, logLevel);
 
         if (msTestFiles.length == 0) {
             if (!failOnError) {
@@ -68,8 +69,8 @@ public class MSTestTransformer extends MasterToSlaveFileCallable<Boolean> {
         for (String mstestFile : msTestFiles) {
             logger.info("processing report file: " + mstestFile);
             try {
-                new ContentCorrector(mstestFile).fix();
-                unitReportTransformer.transform(mstestFile, junitOutputPath);
+                new ContentCorrector(mstestFile).fix(logLevel);
+                unitReportTransformer.transform(mstestFile, junitOutputPath, this.logLevel);
             } catch (TransformerException | SAXException te) {
                 throw new IOException(
                     MsTestLogger.format(

@@ -15,6 +15,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.GregorianCalendar;
+import java.util.logging.Level;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.junit.After;
@@ -109,7 +110,7 @@ public class MSTestPublisherTest extends TestHelper {
             .getResourceAsStream("JENKINS-23531-xmlentities-forged.trx");
         FileCopyUtils.copy(testStream, new FileOutputStream(testFile));
         String[] results = MSTestPublisher
-            .resolveTestReports("*.trx", run, workspace, buildListener);
+            .resolveTestReports("*.trx", run, workspace, buildListener, Level.INFO);
         Assert.assertEquals(0, results.length);
     }
 

@@ -7,6 +7,7 @@ import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
 
 class FileResolver {
 
@@ -16,8 +17,8 @@ class FileResolver {
         this.listener = listener;
     }
 
-    String SafeResolveFilePath(String filePath, Run<?, ?> build, TaskListener listener) {
-        MsTestLogger logger = new MsTestLogger(listener);
+    String SafeResolveFilePath(String filePath, Run<?, ?> build, TaskListener listener, Level logLevel) {
+        MsTestLogger logger = new MsTestLogger(listener, logLevel);
         String resolved = filePath;
         EnvVars env = null;
         try {
@@ -33,13 +34,13 @@ class FileResolver {
             Thread.currentThread().interrupt();
         }
         if (env != null) {
-            resolved = resolveFilePath(filePath, env);
+            resolved = resolveFilePath(filePath, env, logLevel);
         }
         return resolved;
     }
 
-    private String resolveFilePath(String filePath, EnvVars env) {
-        MsTestLogger logger = new MsTestLogger(listener);
+    private String resolveFilePath(String filePath, EnvVars env, Level logLevel) {
+        MsTestLogger logger = new MsTestLogger(listener, logLevel);
         String resolvedFilePath = filePath;
         String expanded = env.expand(resolvedFilePath);
         if (expanded != null) {
@@ -59,8 +60,8 @@ class FileResolver {
      * @param workspace the build's workspace
      * @return an array of strings containing filenames of MSTest report files
      */
-    String[] FindMatchingMSTestReports(String pattern, FilePath workspace) {
-        MsTestLogger logger = new MsTestLogger(listener);
+    String[] FindMatchingMSTestReports(String pattern, FilePath workspace, Level logLevel) {
+        MsTestLogger logger = new MsTestLogger(listener, logLevel);
         if (workspace == null) {
             return new String[]{};
         }

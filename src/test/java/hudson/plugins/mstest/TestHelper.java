@@ -3,6 +3,7 @@ package hudson.plugins.mstest;
 import hudson.FilePath;
 import hudson.Util;
 import java.io.File;
+import java.util.logging.Level;
 import org.jmock.Mockery;
 import org.jmock.lib.legacy.ClassImposteriser;
 
@@ -39,7 +40,7 @@ public abstract class TestHelper {
         return new Mockery();
     }
 
-    String[] resolve(String testFile) {
-        return new FileResolver(null).FindMatchingMSTestReports(testFile, workspace);
+    String[] resolve(String testFile, Level logLevel) {
+        return new FileResolver(null).FindMatchingMSTestReports(testFile, workspace, logLevel);
     }
 }

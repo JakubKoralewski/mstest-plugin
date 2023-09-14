@@ -18,13 +18,13 @@ class MsTestLogger implements Serializable {
 
     private static final Logger logger = Logger.getLogger(MSTestReportConverter.class.getName());
 
-    MsTestLogger(TaskListener listener) {
+    MsTestLogger(TaskListener listener, Level level) {
         this.listener = listener;
-        this.configuredLevel = parseLevel(System.getProperty(HUDSON_PLUGINS_MSTEST_LEVEL));
+        this.configuredLevel = level;
     }
 
-    static MsTestLogger getLogger() {
-        return new MsTestLogger(null);
+    static MsTestLogger getLogger(Level level) {
+        return new MsTestLogger(null, level);
     }
 
     static String format(String message) {

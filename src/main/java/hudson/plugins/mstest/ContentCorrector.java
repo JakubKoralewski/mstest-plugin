@@ -12,6 +12,7 @@ import java.io.PrintWriter;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.logging.Level;
 
 /**
  * @author nilleb
@@ -30,7 +31,7 @@ class ContentCorrector {
         return new Random().nextInt((max - min) + 1) + min;
     }
 
-    void fix() throws IOException {
+    void fix(Level logLevel) throws IOException {
         String filename = randInt(1000, 1000000) + ".trx";
         File inFile = new File(file);
         File parent = inFile.getParentFile();
@@ -52,7 +53,7 @@ class ContentCorrector {
                 }
             }
         }
-        MsTestLogger logger = new MsTestLogger(null);
+        MsTestLogger logger = new MsTestLogger(null, logLevel);
 
         if (replace) {
             FileOperator.safeDelete(inFile, logger);

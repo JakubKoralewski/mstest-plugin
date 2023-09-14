@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -46,8 +47,8 @@ class MSTestReportConverter implements Serializable {
     private MsTestLogger logger;
     private transient int fileCount;
 
-    MSTestReportConverter(TaskListener listener) {
-        this.logger = new MsTestLogger(listener);
+    MSTestReportConverter(TaskListener listener, Level logLevel) {
+        this.logger = new MsTestLogger(listener, logLevel);
     }
 
     /**
@@ -62,17 +63,17 @@ class MSTestReportConverter implements Serializable {
      * @throws ParserConfigurationException thrown if something is wrong with the current system XL
      * configuration
      */
-    void transform(String file, File junitOutputPath)
+    void transform(String file, File junitOutputPath, Level logLevel)
         throws IOException, TransformerException,
         SAXException, ParserConfigurationException {
         File f = new File(file);
         try (FileInputStream fileStream = new FileInputStream(f)) {
-            transform(fileStream, junitOutputPath);
+            transform(fileStream, junitOutputPath, logLevel);
         }
 
         for (File c : getCoverageFiles(f)) {
             if (c.exists()) {
-                if (containsData(c)) {
+                if (containsData(c, logLevel)) {
                     convertToEmma(f, c);
                     break;
                 } else {
@@ -111,7 +112,7 @@ class MSTestReportConverter implements Serializable {
         }
     }
 
-    private boolean containsData(File c) throws IOException {
+    private boolean containsData(File c, Level level) throws IOException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         try {
             factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
@@ -130,7 +131,7 @@ class MSTestReportConverter implements Serializable {
             Double childCount = (Double) expr.evaluate(doc, XPathConstants.NUMBER);
             return childCount > 0;
         } catch (ParserConfigurationException | SAXException | XPathExpressionException ex) {
-            MsTestLogger.getLogger()
+            MsTestLogger.getLogger(level)
                 .error("Caught a XML parsing related exception: %s", ex.getMessage());
         }
         return false;
@@ -143,13 +144,13 @@ class MSTestReportConverter implements Serializable {
      * @param junitOutputPath the output path to put all junit files
      * @throws IOException thrown if there was any problem with the transform.
      */
-    private void transform(InputStream mstestFileStream, File junitOutputPath)
+    private void transform(InputStream mstestFileStream, File junitOutputPath, Level logLevel)
         throws IOException, TransformerException,
         SAXException, ParserConfigurationException {
         File junitTargetFile = new File(junitOutputPath, TEMP_JUNIT_FILE_STR);
         XslTransformer.FromResource(MSTEST_TO_JUNIT_XSLFILE_STR)
             .transform(mstestFileStream, junitTargetFile);
-        splitJUnitFile(junitTargetFile, junitOutputPath);
+        splitJUnitFile(junitTargetFile, junitOutputPath, logLevel);
         FileOperator.safeDelete(junitOutputPath, logger);
     }
 
@@ -172,7 +173,7 @@ class MSTestReportConverter implements Serializable {
      * @param junitFile report containing one or more junit test suite tags
      * @param junitOutputPath the path to put all junit files
      */
-    private void splitJUnitFile(File junitFile, File junitOutputPath)
+    private void splitJUnitFile(File junitFile, File junitOutputPath, Level logLevel)
         throws SAXException, IOException,
         TransformerException, TransformerFactoryConfigurationError, ParserConfigurationException {
         Document document = getDocumentBuilder().parse(junitFile);
@@ -188,7 +189,7 @@ class MSTestReportConverter implements Serializable {
             try {
                 new XslTransformer().transform(source, junitOutputFile);
             } catch (TransformerConfigurationException ex) {
-                MsTestLogger.getLogger().error(
+                MsTestLogger.getLogger(logLevel).error(
                     "Caught a TransformerConfigurationException (what's the system configuration?) %s",
                     ex.getMessage());
             }
